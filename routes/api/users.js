@@ -1,5 +1,7 @@
 const express = require("express");
-const { check, validationResult } = require("express-validator/check");
+const { check, validationResult } = require("express-validator");
+const user = require("../../models/User");
+const gravatar = require("gravatar");
 
 const router = express.Router();
 
@@ -16,18 +18,24 @@ router.post(
       min: 6,
     }),
   ],
-  (req, res) => {
+  async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-
+    const { name, email, password } = req.body;
     //see if the user exists
-    //get user gravatar
-    //encrypt password
-    //return json web token
+    try {
+      let user = await User.findOne({ email });
+      if (email) {
+        res.status(400).json({ errors: [{ msg: "user already exist" }] });
+      }
 
-    res.json({ msg: "Users Works" });
+      res.json({ msg: "Users Works" });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send("user exist");
+    }
   }
 );
 
