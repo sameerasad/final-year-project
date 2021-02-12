@@ -1,62 +1,82 @@
 const express = require("express");
-const { check, validationResult } = require("express-validator");
-const user = require("../../models/User");
-const gravatar = require("gravatar");
-const User = require("../../models/User");
-const bcrypt = require("bcryptjs");
-
 const router = express.Router();
+const gravatar = require("gravatar");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const config = require("config");
+const { check, validationResult } = require("express-validator");
+const normalize = require("normalize-url");
 
-//@route post api/user
-//@desc  register user route
-//access public
+const User = require("../../models/User");
 
+// @route    POST api/users
+// @desc     Register user
+// @access   Public
 router.post(
   "/",
-  [
-    check("name", "name is required").not().isEmpty(),
-    check("email", "enter a valid email").isEmail(),
-    check("password", "password should be atleast 6 character").isLength({
-      min: 6,
-    }),
-  ],
+  check("name", "Name is required").notEmpty(),
+  check("email", "Please include a valid email").isEmail(),
+  check(
+    "password",
+    "Please enter a password with 6 or more characters"
+  ).isLength({ min: 6 }),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    const { name, email, password } = req.body;
-    //see if the user exists
+
+    const { name, email, password } = await req.body;
+
     try {
       let user = await User.findOne({ email });
-      if (email) {
-        res.status(400).json({ errors: [{ msg: "user already exist" }] });
+
+      if (user) {
+        return res
+          .status(400)
+          .json({ errors: [{ msg: "User already exists" }] });
       }
 
-      const avatar = gravatar.url(email, {
-        s: "200",
-        r: "pg",
-        d: "mm",
-      });
-      //create instance of user in db
+      const avatar = normalize(
+        gravatar.url(email, {
+          s: "200",
+          r: "pg",
+          d: "mm",
+        }),
+        { forceHttps: true }
+      );
+
       user = new User({
         name,
         email,
         avatar,
         password,
       });
-      //password is not hashed yet
-      //use bcrypt to hashed the password
 
-      const salt = await bcrypt.genSalt(10); // bcrypt return a promise
+      const salt = await bcrypt.genSalt(10);
+
       user.password = await bcrypt.hash(password, salt);
 
       await user.save();
-      res.json({ msg: "Users Works" });
-      res.send("User Registered");
+
+      const payload = {
+        user: {
+          id: user.id,
+        },
+      };
+
+      jwt.sign(
+        payload,
+        config.get("jwtSecret"),
+        { expiresIn: "5 days" },
+        (err, token) => {
+          if (err) throw err;
+          res.json({ token });
+        }
+      );
     } catch (err) {
       console.error(err.message);
-      res.status(500).send("user exist");
+      res.status(500).send("Server error");
     }
   }
 );
