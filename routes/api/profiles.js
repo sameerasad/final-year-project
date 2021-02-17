@@ -111,5 +111,38 @@ router.post(
     }
   }
 );
+//@route get api/profiles
+//@desc  get all profiles
+//acsess public
+
+router.get("/", async (req, res) => {
+  try {
+    const profiles = await Profile.find().populate("user", ["name", "avatar"]);
+    res.json(profiles);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json("server error");
+  }
+});
+
+//@route get api/profiles/user/:user_id
+//@desc  get profile by user id
+//acsess public
+
+router.get("/user/:user_id", async (req, res) => {
+  try {
+    const profile = await Profile.findOne({
+      user: req.params.user_id,
+    }).populate("user", ["name", "avatar"]);
+
+    if (!profile)
+      return res.status(400).json({ msg: "there is no profile for this user" });
+
+    res.json(profile);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json("server error");
+  }
+});
 
 module.exports = router;
