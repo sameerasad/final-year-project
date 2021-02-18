@@ -217,8 +217,81 @@ router.delete("/experience/:exp_id", auth, async (req, res) => {
     //get remove index
     const removeIndex = profile.experience
       .map((item) => item)
-      .indexOf(user.req.id);
-    profile.splice(removeIndex, 1);
+      .indexOf(req.params.exp_id);
+    profile.experience.splice(removeIndex, 1);
+
+    await profile.save();
+    res.json(profile);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json("server error");
+  }
+});
+
+//@route put api/profile/education
+//@desc  add profile education
+//acsess private
+
+router.put(
+  "/education",
+  [
+    auth,
+    check("school", "School is required").not().isEmpty(),
+    check("degree", "Degree is required").not().isEmpty(),
+    check("fieldofstudy", "Field date is required").not().isEmpty(),
+    check("from", "From date is required").not().isEmpty(),
+  ],
+  async (req, res) => {
+    const error = validationResult(req);
+    if (!error.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const {
+      shool,
+      degree,
+      fieldofstudy,
+      from,
+      to,
+      current,
+      description,
+    } = req.body;
+    // newExp this will create an object of data that user submit
+    const newEdu = {
+      shool,
+      degree,
+      fieldofstudy,
+      from,
+      to,
+      current,
+      description,
+    };
+    try {
+      const profile = await Profile.findOne({ user: req.user.id });
+
+      profile.education.unshift(newEdu);
+
+      await profile.save();
+
+      res.json(profile);
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).json("Server Error");
+    }
+  }
+);
+
+//@route Delete api/profile/education/:edu_id
+//@desc  delete education from profile
+//acsess private
+
+router.delete("/education/:edu_id", auth, async (req, res) => {
+  try {
+    const profile = Profile.findOne({ user: user.req.id });
+    //get remove index
+    const removeIndex = profile.education
+      .map((item) => item)
+      .indexOf(req.params.edu_id);
+    profile.education.splice(removeIndex, 1);
 
     await profile.save();
     res.json(profile);
