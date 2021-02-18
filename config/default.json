@@ -1,5 +1,0 @@
-{
-    "mongoURI":"mongodb+srv://sameer:123@devconnector.euh72.mongodb.net/devconnetor?retryWrites=true&w=majority",
-    "jwtSecret":"mysecrettokken"
-    
-}
