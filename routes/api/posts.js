@@ -10,7 +10,7 @@ const Profile = require("../../models/Profile");
 //@route post api/post
 //@desc  create a post
 //acsess private
-router.get(
+router.post(
   "/",
   [auth, [check("text", "text is required").not().isEmpty()]],
   async (req, res) => {
